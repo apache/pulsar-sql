@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.sql.presto.decoder.avro;
+package org.apache.pulsar.sql.trino.decoder.avro;
 
 import io.trino.spi.block.Block;
 import io.trino.spi.type.*;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.GenericFixed;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.pulsar.sql.presto.decoder.DecoderTestUtil;
+import org.apache.pulsar.sql.trino.decoder.DecoderTestUtil;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -184,7 +184,7 @@ public class AvroDecoderTestUtil extends DecoderTestUtil {
         GenericRecord record = (GenericRecord) value;
         RowType rowType = (RowType) type;
         assertEquals(record.getSchema().getFields().size(), rowType.getFields().size(), "Avro field size mismatch");
-        assertEquals(block.getPositionCount(), rowType.getFields().size(), "Presto type field size mismatch");
+        assertEquals(block.getPositionCount(), rowType.getFields().size(), "trino type field size mismatch");
         for (int fieldIndex = 0; fieldIndex < rowType.getFields().size(); fieldIndex++) {
             RowType.Field rowField = rowType.getFields().get(fieldIndex);
             Object expectedValue = record.get(rowField.getName().get());
