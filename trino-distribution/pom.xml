@@ -21,26 +21,40 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
-    <groupId>org.apache.pulsar</groupId>
-    <artifactId>pulsar-sql</artifactId>
-    <version>3.0.8-SNAPSHOT</version>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>29</version>
   </parent>
 
-  <artifactId>pulsar-presto-distribution</artifactId>
-  <name>Pulsar SQL :: Pulsar Presto Distribution</name>
+  <groupId>org.apache.pulsar</groupId>
+  <artifactId>trino-pulsar-distribution</artifactId>
+  <name>Pulsar SQL :: Pulsar Trino Distribution</name>
+  <version>4.1.0-SNAPSHOT</version>
 
   <properties>
     <skipBuildDistribution>false</skipBuildDistribution>
     <jersey.version>2.42</jersey.version>
     <objenesis.version>2.6</objenesis.version>
     <objectsize.version>0.0.12</objectsize.version>
-    <maven.version>3.0.5</maven.version>
+    <maven.version>3.9.9</maven.version>
     <guava.version>32.1.1-jre</guava.version>
     <asynchttpclient.version>2.12.1</asynchttpclient.version>
     <errorprone.version>2.5.1</errorprone.version>
     <javax.servlet-api>4.0.1</javax.servlet-api>
+    <trino.version>461</trino.version>
+    <airlift.version>273</airlift.version>
+    <jackson.version>2.18.0</jackson.version>
+    <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+    <license-maven-plugin.version>4.6</license-maven-plugin.version>
+    <jetty.version>9.4.56.v20240826</jetty.version>
+    <guice.version>4.2.0</guice.version>
+    <!-- Launcher properties -->
+    <main-class>io.trino.server.TrinoServer</main-class>
+    <process-name>${project.artifactId}</process-name>
+    <!--fix Security Vulnerabilities-->
+    <!--https://www.cvedetails.com/vulnerability-list/vendor_id-15866/product_id-42991/Fasterxml-Jackson-databind.html-->
+    <jackson.databind.version>2.18.0</jackson.databind.version>
   </properties>
 
   <dependencies>
@@ -49,26 +63,13 @@
       <artifactId>jersey-common</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-server</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
+
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-servlet-core</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.containers</groupId>
-      <artifactId>jersey-container-servlet</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.inject</groupId>
-      <artifactId>jersey-hk2</artifactId>
-      <version>${jersey.version}</version>
-    </dependency>
+
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
@@ -76,8 +77,26 @@
     </dependency>
 
     <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.inject</groupId>
+      <artifactId>jersey-hk2</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-servlet</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.trino</groupId>
-      <artifactId>trino-server-main</artifactId>
+      <artifactId>trino-main</artifactId>
       <version>${trino.version}</version>
       <exclusions>
         <!-- exclude openjdk because of GPL license -->
@@ -92,14 +111,6 @@
         <exclusion>
           <groupId>javax.activation</groupId>
           <artifactId>activation</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.inject.extensions</groupId>
-          <artifactId>guice-multibindings</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-to-slf4j</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -127,6 +138,14 @@
     </dependency>
 
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>trino-pulsar</artifactId>
+      <version>${project.version}</version>
+      <type>tar.gz</type>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
       <version>${objenesis.version}</version>
@@ -136,12 +155,13 @@
       <groupId>com.twitter.common</groupId>
       <artifactId>objectsize</artifactId>
       <version>${objectsize.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>jsr305</artifactId>
-          <groupId>com.google.code.findbugs</groupId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+
+    <!-- make sure guice is set to the correct version -->
+    <dependency>
+      <groupId>com.google.inject.extensions</groupId>
+      <artifactId>guice-multibindings</artifactId>
+      <version>${guice.version}</version>
     </dependency>
 
     <!-- jackson dependencies -->
@@ -149,46 +169,55 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <version>${jackson.databind.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-joda</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-guava</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-smile</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
 
   </dependencies>
@@ -203,7 +232,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty</artifactId>
-        <version>3.10.6.Final</version>
+        <version>4.1.113.Final</version>
       </dependency>
 
       <dependency>
@@ -236,63 +265,6 @@
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.google.errorprone</groupId>
-        <artifactId>error_prone_annotations</artifactId>
-        <version>${errorprone.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-client</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-io</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jmx</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-client</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-http-client-transport</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>http2-server</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>javax.servlet-api</artifactId>
-        <version>${javax.servlet-api}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -300,16 +272,11 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>${skipBuildDistribution}</skip>
-        </configuration>
+        <artifactId>maven-install-plugin</artifactId>
       </plugin>
-
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>${maven-assembly-plugin.version}</version>
+        <version>3.7.1</version>
         <configuration>
           <appendAssemblyId>false</appendAssemblyId>
           <attach>true</attach>
@@ -331,18 +298,47 @@
       </plugin>
 
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>templating-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>filter-src</id>
+            <goals>
+              <goal>filter-sources</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/${project.artifactId}/bin/</sourceDirectory>
+              <outputDirectory>${project.build.directory}/${project.artifactId}/bin/</outputDirectory>
+              <overwrite>true</overwrite>
+              <delimiters>
+                <delimiter>${*}</delimiter>
+              </delimiters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>${license-maven-plugin.version}</version>
+        <version>4.6</version>
         <configuration>
-          <licenseSets>
-            <licenseSet>
-              <header>../../src/license-header.txt</header>
-            </licenseSet>
-          </licenseSets>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
+          <header>../src/license-header.txt</header>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>3.13.0</source>
+          <target>3.13.0</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
@@ -350,35 +346,8 @@
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
         <artifactId>wagon-ssh-external</artifactId>
-        <version>3.4.3</version>
+        <version>3.5.3</version>
       </extension>
     </extensions>
   </build>
-
-  <profiles>
-    <profile>
-      <id>skipBuildDistributionDisabled</id>
-      <activation>
-        <property>
-          <name>skipBuildDistribution</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>${project.groupId}</groupId>
-          <artifactId>pulsar-presto-connector</artifactId>
-          <version>${project.version}</version>
-          <type>tar.gz</type>
-          <scope>provided</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>*</groupId>
-              <artifactId>*</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>
