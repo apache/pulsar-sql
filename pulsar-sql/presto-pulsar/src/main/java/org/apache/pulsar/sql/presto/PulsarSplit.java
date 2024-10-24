@@ -31,7 +31,8 @@ import io.trino.spi.predicate.TupleDomain;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.bookkeeper.mledger.impl.PositionImpl;
+import org.apache.bookkeeper.mledger.Position;
+import org.apache.bookkeeper.mledger.impl.ImmutablePositionImpl;
 import org.apache.pulsar.common.policies.data.OffloadPoliciesImpl;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
@@ -58,8 +59,8 @@ public class PulsarSplit implements ConnectorSplit {
     private final TupleDomain<ColumnHandle> tupleDomain;
     private final SchemaInfo schemaInfo;
 
-    private final PositionImpl startPosition;
-    private final PositionImpl endPosition;
+    private final Position startPosition;
+    private final Position endPosition;
     private final String schemaInfoProperties;
 
     private final OffloadPoliciesImpl offloadPolicies;
@@ -95,8 +96,8 @@ public class PulsarSplit implements ConnectorSplit {
         this.startPositionLedgerId = startPositionLedgerId;
         this.endPositionLedgerId = endPositionLedgerId;
         this.tupleDomain = requireNonNull(tupleDomain, "tupleDomain is null");
-        this.startPosition = PositionImpl.get(startPositionLedgerId, startPositionEntryId);
-        this.endPosition = PositionImpl.get(endPositionLedgerId, endPositionEntryId);
+        this.startPosition = new ImmutablePositionImpl(startPositionLedgerId, startPositionEntryId);
+        this.endPosition =  new ImmutablePositionImpl(endPositionLedgerId, endPositionEntryId);
         this.schemaInfoProperties = schemaInfoProperties;
         this.offloadPolicies = offloadPolicies;
 
@@ -174,11 +175,11 @@ public class PulsarSplit implements ConnectorSplit {
         return tupleDomain;
     }
 
-    public PositionImpl getStartPosition() {
+    public Position getStartPosition() {
         return startPosition;
     }
 
-    public PositionImpl getEndPosition() {
+    public Position getEndPosition() {
         return endPosition;
     }
 

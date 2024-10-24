@@ -59,9 +59,10 @@ import org.apache.bookkeeper.mledger.AsyncCallbacks;
 import org.apache.bookkeeper.mledger.Entry;
 import org.apache.bookkeeper.mledger.ManagedLedgerConfig;
 import org.apache.bookkeeper.mledger.ManagedLedgerFactory;
+import org.apache.bookkeeper.mledger.Position;
 import org.apache.bookkeeper.mledger.ReadOnlyCursor;
 import org.apache.bookkeeper.mledger.impl.EntryImpl;
-import org.apache.bookkeeper.mledger.impl.PositionImpl;
+import org.apache.bookkeeper.mledger.impl.ImmutablePositionImpl;
 import org.apache.bookkeeper.mledger.impl.ReadOnlyCursorImpl;
 import org.apache.bookkeeper.mledger.proto.MLDataFormats;
 import org.apache.bookkeeper.stats.NullStatsProvider;
@@ -312,7 +313,7 @@ public class TestPulsarRecordCursor extends TestPulsarConnector {
             public ReadOnlyCursor answer(InvocationOnMock invocationOnMock) throws Throwable {
                 Object[] args = invocationOnMock.getArguments();
                 String topic = (String) args[0];
-                PositionImpl positionImpl = (PositionImpl) args[1];
+                Position positionImpl = (Position) args[1];
                 int position = positionImpl.getEntryId() == -1 ? 0 : (int) positionImpl.getEntryId();
 
                 positions.put(topic, position);
@@ -329,10 +330,10 @@ public class TestPulsarRecordCursor extends TestPulsarConnector {
                     }
                 }).when(readOnlyCursor).skipEntries(anyInt());
 
-                when(readOnlyCursor.getReadPosition()).thenAnswer(new Answer<PositionImpl>() {
+                when(readOnlyCursor.getReadPosition()).thenAnswer(new Answer<Position>() {
                     @Override
-                    public PositionImpl answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        return PositionImpl.get(0, positions.get(topic));
+                    public Position answer(InvocationOnMock invocationOnMock) throws Throwable {
+                        return new ImmutablePositionImpl(0, positions.get(topic));
                     }
                 });
 
@@ -397,8 +398,8 @@ public class TestPulsarRecordCursor extends TestPulsarConnector {
                     @Override
                     public Long answer(InvocationOnMock invocationOnMock) throws Throwable {
                         Object[] args = invocationOnMock.getArguments();
-                        com.google.common.collect.Range<PositionImpl> range
-                                = (com.google.common.collect.Range<PositionImpl>) args[0];
+                        com.google.common.collect.Range<Position> range
+                                = (com.google.common.collect.Range<Position>) args[0];
                         return (range.upperEndpoint().getEntryId() + 1) - range.lowerEndpoint().getEntryId();
                     }
                 });

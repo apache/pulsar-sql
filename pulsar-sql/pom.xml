@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.apache.pulsar</groupId>
         <artifactId>pulsar</artifactId>
-        <version>3.0.8-SNAPSHOT</version>
+        <version>4.0.0</version>
     </parent>
 
     <artifactId>pulsar-sql</artifactId>
@@ -37,6 +37,7 @@
         <!-- use okio version that matches the okhttp3 version -->
         <okio.version>1.17.2</okio.version>
         <airlift.version>213</airlift.version>
+        <trino.version>368</trino.version>
     </properties>
 
     <dependencyManagement>
@@ -106,17 +107,44 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>${directory-maven-plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>checkstyle</id>
-                        <phase>verify</phase>
+                        <id>directories</id>
                         <goals>
-                            <goal>check</goal>
+                            <goal>directory-of</goal>
                         </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <property>pulsar.basedir</property>
+                            <project>
+                                <groupId>org.apache.pulsar</groupId>
+                                <artifactId>pulsar-sql</artifactId>
+                            </project>
+                        </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${puppycrawl.checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>${pulsar.basedir}/src/checkstyle.xml</configLocation>
+                    <suppressionsLocation>${pulsar.basedir}/src/suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <encoding>UTF-8</encoding>
+                    <excludes>**/proto/*</excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -108,7 +108,7 @@ public class TestReadChunkedMessages extends MockedPulsarServiceBaseTest {
         PulsarSplitManager pulsarSplitManager = new PulsarSplitManager(new PulsarConnectorId("1"), connectorConfig);
         Collection<PulsarSplit> splits = pulsarSplitManager.getSplitsForTopic(
                 topicName.getPersistenceNamingEncoding(),
-                pulsar.getManagedLedgerFactory(),
+                pulsar.getDefaultManagedLedgerFactory(),
                 new ManagedLedgerConfig(),
                 3,
                 new PulsarTableHandle("1", topicName.getNamespace(), topic, topic),
@@ -177,7 +177,7 @@ public class TestReadChunkedMessages extends MockedPulsarServiceBaseTest {
                                ConnectorContext prestoConnectorContext,
                                Set<MovieMessage> messageSet) {
         PulsarRecordCursor pulsarRecordCursor = new PulsarRecordCursor(
-                columnHandleList, split, connectorConfig, pulsar.getManagedLedgerFactory(),
+                columnHandleList, split, connectorConfig, pulsar.getDefaultManagedLedgerFactory(),
                 new ManagedLedgerConfig(), new PulsarConnectorMetricsTracker(new NullStatsProvider()),
                 new PulsarDispatchingRowDecoderFactory(prestoConnectorContext.getTypeManager()));
 

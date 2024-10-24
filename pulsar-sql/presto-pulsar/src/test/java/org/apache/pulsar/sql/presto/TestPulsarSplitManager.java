@@ -30,7 +30,7 @@ import io.trino.spi.predicate.Domain;
 import io.trino.spi.predicate.Range;
 import io.trino.spi.predicate.TupleDomain;
 import io.trino.spi.predicate.ValueSet;
-import org.apache.bookkeeper.mledger.impl.PositionImpl;
+import org.apache.bookkeeper.mledger.impl.ImmutablePositionImpl;
 import org.apache.pulsar.client.impl.schema.JSONSchema;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.policies.data.OffloadPoliciesImpl;
@@ -116,10 +116,10 @@ public class TestPulsarSplitManager extends TestPulsarConnector {
                 assertEquals(pulsarSplit.getSchemaType(), topicsToSchemas.get(topicName.getSchemaName()).getType());
                 assertEquals(pulsarSplit.getStartPositionEntryId(), totalSize);
                 assertEquals(pulsarSplit.getStartPositionLedgerId(), 0);
-                assertEquals(pulsarSplit.getStartPosition(), PositionImpl.get(0, totalSize));
+                assertEquals(pulsarSplit.getStartPosition(), new ImmutablePositionImpl(0, totalSize));
                 assertEquals(pulsarSplit.getEndPositionLedgerId(), 0);
                 assertEquals(pulsarSplit.getEndPositionEntryId(), totalSize + pulsarSplit.getSplitSize());
-                assertEquals(pulsarSplit.getEndPosition(), PositionImpl.get(0, totalSize + pulsarSplit.getSplitSize()));
+                assertEquals(pulsarSplit.getEndPosition(), new ImmutablePositionImpl(0, totalSize + pulsarSplit.getSplitSize()));
 
                 totalSize += pulsarSplit.getSplitSize();
             }
@@ -165,10 +165,10 @@ public class TestPulsarSplitManager extends TestPulsarConnector {
                     assertEquals(pulsarSplit.getSchemaType(), topicsToSchemas.get(topicName.getSchemaName()).getType());
                     assertEquals(pulsarSplit.getStartPositionEntryId(), totalSize);
                     assertEquals(pulsarSplit.getStartPositionLedgerId(), 0);
-                    assertEquals(pulsarSplit.getStartPosition(), PositionImpl.get(0, totalSize));
+                    assertEquals(pulsarSplit.getStartPosition(), new ImmutablePositionImpl(0, totalSize));
                     assertEquals(pulsarSplit.getEndPositionLedgerId(), 0);
                     assertEquals(pulsarSplit.getEndPositionEntryId(), totalSize + pulsarSplit.getSplitSize());
-                    assertEquals(pulsarSplit.getEndPosition(), PositionImpl.get(0, totalSize + pulsarSplit.getSplitSize()));
+                    assertEquals(pulsarSplit.getEndPosition(), new ImmutablePositionImpl(0, totalSize + pulsarSplit.getSplitSize()));
 
                     totalSize += pulsarSplit.getSplitSize();
                 }
@@ -231,10 +231,10 @@ public class TestPulsarSplitManager extends TestPulsarConnector {
             assertEquals(pulsarSplit.getSchemaType(), topicsToSchemas.get(topicName.getSchemaName()).getType());
             assertEquals(pulsarSplit.getStartPositionEntryId(), initalStart);
             assertEquals(pulsarSplit.getStartPositionLedgerId(), 0);
-            assertEquals(pulsarSplit.getStartPosition(), PositionImpl.get(0, initalStart));
+            assertEquals(pulsarSplit.getStartPosition(), new ImmutablePositionImpl(0, initalStart));
             assertEquals(pulsarSplit.getEndPositionLedgerId(), 0);
             assertEquals(pulsarSplit.getEndPositionEntryId(), initalStart + pulsarSplit.getSplitSize());
-            assertEquals(pulsarSplit.getEndPosition(), PositionImpl.get(0, initalStart + pulsarSplit
+            assertEquals(pulsarSplit.getEndPosition(), new ImmutablePositionImpl(0, initalStart + pulsarSplit
                     .getSplitSize()));
 
             initalStart += pulsarSplit.getSplitSize();
@@ -292,10 +292,10 @@ public class TestPulsarSplitManager extends TestPulsarConnector {
                 assertEquals(pulsarSplit.getSchemaType(), topicsToSchemas.get(topicName.getSchemaName()).getType());
                 assertEquals(pulsarSplit.getStartPositionEntryId(), initialStart);
                 assertEquals(pulsarSplit.getStartPositionLedgerId(), 0);
-                assertEquals(pulsarSplit.getStartPosition(), PositionImpl.get(0, initialStart));
+                assertEquals(pulsarSplit.getStartPosition(), new ImmutablePositionImpl(0, initialStart));
                 assertEquals(pulsarSplit.getEndPositionLedgerId(), 0);
                 assertEquals(pulsarSplit.getEndPositionEntryId(), initialStart + pulsarSplit.getSplitSize());
-                assertEquals(pulsarSplit.getEndPosition(), PositionImpl.get(0, initialStart + pulsarSplit.getSplitSize()));
+                assertEquals(pulsarSplit.getEndPosition(), new ImmutablePositionImpl(0, initialStart + pulsarSplit.getSplitSize()));
 
                 initialStart += pulsarSplit.getSplitSize();
                 totalSize += pulsarSplit.getSplitSize();

@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.slice.SizeOf.SIZE_OF_LONG;
 import static io.trino.decoder.FieldValueProviders.bytesValueProvider;
 import static io.trino.decoder.FieldValueProviders.longValueProvider;
+import static org.apache.bookkeeper.mledger.PositionFactory.LATEST;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -48,6 +49,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,7 +60,6 @@ import org.apache.bookkeeper.mledger.ManagedLedgerException;
 import org.apache.bookkeeper.mledger.ManagedLedgerFactory;
 import org.apache.bookkeeper.mledger.Position;
 import org.apache.bookkeeper.mledger.ReadOnlyCursor;
-import org.apache.bookkeeper.mledger.impl.PositionImpl;
 import org.apache.bookkeeper.mledger.impl.ReadOnlyCursorImpl;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
@@ -75,7 +76,6 @@ import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.KeyValueEncodingType;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
-import org.apache.pulsar.common.util.collections.ConcurrentOpenHashMap;
 import org.apache.pulsar.sql.presto.util.CacheSizeAllocator;
 import org.apache.pulsar.sql.presto.util.NoStrictCacheSizeAllocator;
 import org.apache.pulsar.sql.presto.util.NullCacheSizeAllocator;
@@ -123,8 +123,7 @@ public class PulsarRecordCursor implements RecordCursor {
 
     PulsarDispatchingRowDecoderFactory decoderFactory;
 
-    protected ConcurrentOpenHashMap<String, ChunkedMessageCtx> chunkedMessagesMap =
-            ConcurrentOpenHashMap.<String, ChunkedMessageCtx>newBuilder().build();
+    protected ConcurrentHashMap<String, ChunkedMessageCtx> chunkedMessagesMap = new ConcurrentHashMap<>();
 
     private static final Logger log = Logger.get(PulsarRecordCursor.class);
 
@@ -366,7 +365,7 @@ public class PulsarRecordCursor implements RecordCursor {
     }
 
     private boolean entryExceedSplitEndPosition(Entry entry) {
-        return ((PositionImpl) entry.getPosition()).compareTo(pulsarSplit.getEndPosition()) >= 0;
+        return entry.getPosition().compareTo(pulsarSplit.getEndPosition()) >= 0;
     }
 
     @VisibleForTesting
@@ -383,7 +382,7 @@ public class PulsarRecordCursor implements RecordCursor {
 
             if (outstandingReadsRequests.get() > 0) {
                 if (!cursor.hasMoreEntries()
-                        || (((PositionImpl) cursor.getReadPosition()).compareTo(pulsarSplit.getEndPosition()) >= 0
+                        || (cursor.getReadPosition().compareTo(pulsarSplit.getEndPosition()) >= 0
                                 && chunkedMessagesMap.isEmpty())) {
                     isDone = true;
 
@@ -401,7 +400,7 @@ public class PulsarRecordCursor implements RecordCursor {
 
                             long numEntries = readOnlyCursorImpl.getCurrentLedgerInfo().getEntries();
                             long entriesToSkip =
-                                (numEntries - ((PositionImpl) cursor.getReadPosition()).getEntryId()) + 1;
+                                (numEntries - (cursor.getReadPosition()).getEntryId()) + 1;
                             cursor.skipEntries(Math.toIntExact((entriesToSkip)));
 
                             entriesProcessed += entriesToSkip;
@@ -413,7 +412,7 @@ public class PulsarRecordCursor implements RecordCursor {
                             // if the available size is invalid and the entry queue size is 0, read one entry
                             outstandingReadsRequests.decrementAndGet();
                             cursor.asyncReadEntries(batchSize, entryQueueCacheSizeAllocator.getAvailableCacheSize(),
-                                    this, System.nanoTime(), PositionImpl.LATEST);
+                                    this, System.nanoTime(), LATEST);
                         }
 
                         // stats for successful read request

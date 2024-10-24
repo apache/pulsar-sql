@@ -29,8 +29,9 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.mledger.Entry;
 import org.apache.bookkeeper.mledger.ManagedLedgerConfig;
+import org.apache.bookkeeper.mledger.Position;
 import org.apache.bookkeeper.mledger.ReadOnlyCursor;
-import org.apache.bookkeeper.mledger.impl.PositionImpl;
+import org.apache.bookkeeper.mledger.impl.ImmutablePositionImpl;
 import org.apache.bookkeeper.stats.NullStatsProvider;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.pulsar.broker.auth.MockedPulsarServiceBaseTest;
@@ -90,12 +91,12 @@ public class TestCacheSizeAllocator extends MockedPulsarServiceBaseTest {
         int totalMsgCnt = 1000;
         MessageIdImpl firstMessageId = prepareData(topicName, totalMsgCnt);
 
-        ReadOnlyCursor readOnlyCursor = pulsar.getManagedLedgerFactory().openReadOnlyCursor(
+        ReadOnlyCursor readOnlyCursor = pulsar.getDefaultManagedLedgerFactory().openReadOnlyCursor(
                 topicName.getPersistenceNamingEncoding(),
-                PositionImpl.get(firstMessageId.getLedgerId(), firstMessageId.getEntryId()),
+                new ImmutablePositionImpl(firstMessageId.getLedgerId(), firstMessageId.getEntryId()),
                 new ManagedLedgerConfig());
         readOnlyCursor.skipEntries(totalMsgCnt);
-        PositionImpl lastPosition = (PositionImpl) readOnlyCursor.getReadPosition();
+        Position lastPosition = readOnlyCursor.getReadPosition();
 
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -124,7 +125,7 @@ public class TestCacheSizeAllocator extends MockedPulsarServiceBaseTest {
 
         ConnectorContext prestoConnectorContext = new TestingConnectorContext();
         PulsarRecordCursor pulsarRecordCursor = new PulsarRecordCursor(
-                pulsarColumnHandles, pulsarSplit, connectorConfig, pulsar.getManagedLedgerFactory(),
+                pulsarColumnHandles, pulsarSplit, connectorConfig, pulsar.getDefaultManagedLedgerFactory(),
                 new ManagedLedgerConfig(), new PulsarConnectorMetricsTracker(new NullStatsProvider()),
                 new PulsarDispatchingRowDecoderFactory(prestoConnectorContext.getTypeManager()));
 

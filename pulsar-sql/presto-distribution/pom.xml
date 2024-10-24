@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.apache.pulsar</groupId>
     <artifactId>pulsar-sql</artifactId>
-    <version>3.0.8-SNAPSHOT</version>
+    <version>4.0.0</version>
   </parent>
 
   <artifactId>pulsar-presto-distribution</artifactId>
@@ -328,22 +328,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>${license-maven-plugin.version}</version>
-        <configuration>
-          <licenseSets>
-            <licenseSet>
-              <header>../../src/license-header.txt</header>
-            </licenseSet>
-          </licenseSets>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-        </configuration>
       </plugin>
     </plugins>
     <extensions>
